@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chemo Dash</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header class="top">
+      <div>
+        <h1>Chemo Dash</h1>
+        <p class="sub">Make it to treatment on time. The city will not play fair.</p>
+      </div>
+      <div class="hud">
+        <div class="pill">Score: <span id="score">0</span></div>
+        <div class="pill">Helps: <span id="helps">0</span></div>
+        <div class="pill">Time: <span id="time">60</span>s</div>
+      </div>
+    </header>
+
+    <main class="main">
+      <div class="canvasCard">
+        <canvas id="game" width="960" height="540"></canvas>
+      </div>
+
+      <div class="controls">
+        <div class="keyRow">
+          <div class="key"><b>Space</b> jump</div>
+          <div class="key"><b>Down</b> slide</div>
+          <div class="key"><b>P</b> pause</div>
+          <div class="key"><b>Click/Tap</b> jump</div>
+        </div>
+        <p class="note">Goal: survive 60 seconds and reach the clinic.</p>
+      </div>
+    </main>
+  </div>
+
+  <div id="overlay" class="overlay">
+    <div class="panel">
+      <h2 id="title">Chemo Dash</h2>
+      <p id="text" class="overlayText">
+        Dodge delays and obstacles to make it to treatment. Fast to play, easy to replay.
+      </p>
+      <div class="btnRow">
+        <button id="playBtn">Play</button>
+        <button id="howBtn" class="secondary">How it works</button>
+      </div>
+      <p class="small">Made for LA Against Cancer: Day of Play.</p>
+    </div>
+  </div>
+
+  <script src="game.js"></script>
+</body>
+</html>
