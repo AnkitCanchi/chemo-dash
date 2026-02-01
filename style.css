@@ -296,3 +296,171 @@ select, input{
   opacity: 0.95;
 }
 .modalBtns{ margin-top: 12px; }
+
+/* ---------- CARTOONY GAME SKIN OVERRIDES ---------- */
+
+:root{
+  --ink: rgba(10,12,20,0.75);
+  --paper: rgba(255,255,255,0.10);
+
+  --c-diagnosis: #8b5cf6;
+  --c-delay: #fb7185;
+  --c-support: #34d399;
+  --c-checkpoint: #fbbf24;
+  --c-treatment: #60a5fa;
+}
+
+/* Make background playful */
+body{
+  background:
+    radial-gradient(900px 600px at 20% 0%, rgba(139,92,246,0.30), transparent 60%),
+    radial-gradient(900px 600px at 90% 10%, rgba(96,165,250,0.26), transparent 60%),
+    radial-gradient(900px 700px at 60% 100%, rgba(52,211,153,0.16), transparent 60%),
+    linear-gradient(180deg, #070914, #0b1224);
+}
+
+/* Header looks more like a game */
+.hudBar{
+  border-bottom: 2px solid rgba(255,255,255,0.10);
+}
+.title{
+  font-size: 22px;
+  letter-spacing: 0.3px;
+}
+.subtitle{
+  opacity: 0.9;
+}
+
+/* Board stage centers board, removes dead space */
+.boardStage{
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 8px;
+}
+
+.board{
+  width: min(1040px, 100%);
+  grid-auto-rows: 118px;
+  gap: 14px;
+  position: relative;
+  padding: 10px;
+}
+
+/* Doodle path behind tiles */
+.board::before{
+  content:"";
+  position:absolute;
+  inset: 14px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255,255,255,0.05), transparent 35%),
+    radial-gradient(circle at 70% 35%, rgba(255,255,255,0.05), transparent 35%),
+    radial-gradient(circle at 35% 80%, rgba(255,255,255,0.05), transparent 35%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,0.06);
+  z-index: 0;
+}
+
+/* Tile base: sticker card */
+.space{
+  z-index: 1;
+  border-radius: 22px;
+  padding: 12px;
+  border: 2px solid rgba(255,255,255,0.14);
+  background:
+    radial-gradient(220px 140px at 30% 20%, rgba(255,255,255,0.12), transparent 60%),
+    rgba(0,0,0,0.22);
+  box-shadow: 0 18px 30px rgba(0,0,0,0.35);
+  transform: rotate(-0.4deg);
+}
+.space:nth-child(3n){ transform: rotate(0.35deg); }
+.space:nth-child(4n){ transform: rotate(-0.2deg); }
+
+.space:hover{
+  transform: translateY(-3px) rotate(0deg);
+  border-color: rgba(255,255,255,0.22);
+}
+
+/* Big friendly number badge */
+.space .num{
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-weight: 1000;
+  font-size: 12px;
+  background: rgba(255,255,255,0.10);
+  border: 1px solid rgba(255,255,255,0.14);
+}
+
+/* Mystery text looks like a secret */
+.space .mystery{
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 1000;
+  line-height: 1.2;
+}
+.space .mystery.unknown{
+  opacity: 0.7;
+  letter-spacing: 3px;
+}
+
+/* Token becomes a glossy bead */
+.token{
+  width: 16px;
+  height: 16px;
+  border-width: 2px;
+  box-shadow: 0 12px 16px rgba(0,0,0,0.35);
+}
+
+/* Active tile looks like “your turn” */
+.space.active{
+  border-color: rgba(255,255,255,0.35);
+  box-shadow:
+    0 0 0 4px rgba(139,92,246,0.20) inset,
+    0 18px 30px rgba(0,0,0,0.35);
+}
+
+/* Revealed tiles get a fun color theme (still hidden until revealed) */
+.space.revealed.delay{ border-color: rgba(251,113,133,0.55); }
+.space.revealed.support{ border-color: rgba(52,211,153,0.55); }
+.space.revealed.checkpoint{ border-color: rgba(251,191,36,0.55); }
+.space.revealed.start{ border-color: rgba(139,92,246,0.55); }
+.space.revealed.end{ border-color: rgba(96,165,250,0.55); }
+
+/* Cute corner sticker icon */
+.space .sticker{
+  position:absolute;
+  left: 10px;
+  bottom: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.10);
+  border: 2px solid rgba(255,255,255,0.16);
+  display:grid;
+  place-items:center;
+  font-size: 16px;
+  font-weight: 1000;
+  opacity: 0.95;
+}
+
+/* Action panel looks more game-like */
+.panel{
+  border-radius: 22px;
+  border-width: 2px;
+}
+.cardText{
+  border-radius: 18px;
+  border-width: 2px;
+  background:
+    radial-gradient(240px 160px at 30% 20%, rgba(255,255,255,0.10), transparent 60%),
+    rgba(0,0,0,0.20);
+}
+
+/* Make setup look like a “start menu”, then hide after start */
+#setupBox.started{
+  opacity: 0.35;
+  filter: saturate(0.6);
+}
+
