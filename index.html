@@ -7,104 +7,86 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <header class="top">
-    <div class="brand">
-      <h1>The Long Way to Treatment</h1>
-      <p class="sub">
-        A digital board game about reaching cancer treatment while real barriers delay care.
-      </p>
+  <header class="hudBar">
+    <div class="hudLeft">
+      <div class="title">The Long Way to Treatment</div>
+      <div class="subtitle">A digital board game about reaching cancer treatment while barriers delay care.</div>
     </div>
 
-    <div class="hud">
-      <div class="pill">Turn: <span id="turnName">Player 1</span></div>
-      <div class="pill">Roll: <span id="lastRoll">-</span></div>
-      <div class="pill">Round: <span id="roundNum">1</span></div>
+    <div class="hudRight">
+      <div class="chip">Turn: <span id="turnName">-</span></div>
+      <div class="chip">Roll: <span id="lastRoll">-</span></div>
+      <div class="chip">Round: <span id="roundNum">-</span></div>
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="leftCol">
-      <div class="card" id="setupCard">
-        <h2>Setup</h2>
-        <p class="help">
-          Pick players, then roll the die. First to reach <b>Treatment</b> wins.
-        </p>
-
-        <div class="row">
-          <label>Players</label>
-          <select id="playerCount">
-            <option value="1">1 player</option>
-            <option value="2" selected>2 players</option>
-            <option value="3">3 players</option>
-            <option value="4">4 players</option>
-          </select>
+  <main class="screen">
+    <section class="boardWrap">
+      <div class="boardHeader">
+        <div class="micro">
+          Spaces are hidden. You only learn what a space is after you land on it.
         </div>
-
-        <div id="nameFields" class="nameFields"></div>
-
-        <button id="startBtn">Start Game</button>
-        <p class="tiny">
-          This game is about systems and access. Delays are not your fault.
-        </p>
       </div>
 
-      <div class="card hidden" id="actionCard">
-        <h2>Action</h2>
+      <div id="board" class="board" aria-label="Game board"></div>
 
-        <div class="bigLine">
-          <div class="label">You landed on:</div>
-          <div class="value" id="landedText">-</div>
+      <div class="boardFooter">
+        <div id="statusLine" class="statusLine">Press Start to begin.</div>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="panel">
+        <div class="panelTop">
+          <div class="panelTitle">Action</div>
+          <div class="badgeRow">
+            <span class="badge">Auto resolves in <span id="autoIn">-</span>s</span>
+          </div>
         </div>
 
-        <div class="divider"></div>
-
-        <div class="bigLine">
-          <div class="label">Card:</div>
-          <div class="value" id="cardText">Roll to begin.</div>
+        <div class="bigRow">
+          <div class="k">Landed on</div>
+          <div class="v" id="landedText">-</div>
         </div>
 
-        <div class="divider"></div>
+        <div class="bigRow">
+          <div class="k">Revealed</div>
+          <div class="v" id="revealText">-</div>
+        </div>
 
-        <div class="buttons">
-          <button id="rollBtn">Roll Die</button>
+        <div class="cardText" id="cardText">
+          Set players, then roll.
+        </div>
+
+        <div class="btnRow">
+          <button id="rollBtn" disabled>Roll Die</button>
           <button id="endTurnBtn" class="secondary" disabled>End Turn</button>
         </div>
 
-        <p class="note" id="noteText">
-          Tip: Some delays affect everyone. Supports can block a delay.
-        </p>
-      </div>
-
-      <div class="card hidden" id="playersCard">
-        <h2>Players</h2>
-        <div id="playersList" class="playersList"></div>
-      </div>
-    </section>
-
-    <section class="rightCol">
-      <div class="boardCard">
-        <div class="boardTop">
-          <div class="legend">
-            <span class="tag start">Diagnosis</span>
-            <span class="tag delay">Delay</span>
-            <span class="tag support">Support</span>
-            <span class="tag checkpoint">Checkpoint</span>
-            <span class="tag end">Treatment</span>
+        <div class="setup">
+          <div class="setupTitle">Setup</div>
+          <div class="setupRow">
+            <label>Players</label>
+            <select id="playerCount">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select>
           </div>
-
-          <div class="legend2">
-            <span class="mini">Delays: insurance, paperwork, transport, work, childcare</span>
-            <span class="mini">Supports: navigator, rides, paid leave</span>
+          <div id="nameFields" class="nameFields"></div>
+          <button id="startBtn">Start Game</button>
+          <div class="tiny">
+            The system is the obstacle, not the patient. Supports are rare by design.
           </div>
         </div>
 
-        <div id="board" class="board" aria-label="Game board"></div>
-
-        <div class="footerLine">
-          <span id="statusLine">Press Start Game.</span>
+        <div class="playersBox">
+          <div class="setupTitle">Players</div>
+          <div id="playersList" class="playersList"></div>
         </div>
       </div>
-    </section>
+    </aside>
   </main>
 
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
