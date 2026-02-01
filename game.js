@@ -1,480 +1,409 @@
-// Chemo Dash runner using Phaser 3 (via CDN in index.html)
-const W = 960, H = 540;
-const lanes = [W * 0.35, W * 0.50, W * 0.65];
+// The Long Way to Treatment (Digital Board Game)
+// Simple, readable, and cancer-related at first glance.
+
+const boardEl = document.getElementById("board");
+const statusLineEl = document.getElementById("statusLine");
+
+const playerCountEl = document.getElementById("playerCount");
+const nameFieldsEl = document.getElementById("nameFields");
+const startBtn = document.getElementById("startBtn");
+
+const setupCard = document.getElementById("setupCard");
+const actionCard = document.getElementById("actionCard");
+const playersCard = document.getElementById("playersCard");
+
+const playersListEl = document.getElementById("playersList");
+
+const turnNameEl = document.getElementById("turnName");
+const lastRollEl = document.getElementById("lastRoll");
+const roundNumEl = document.getElementById("roundNum");
+
+const landedTextEl = document.getElementById("landedText");
+const cardTextEl = document.getElementById("cardText");
+const noteTextEl = document.getElementById("noteText");
+
+const rollBtn = document.getElementById("rollBtn");
+const endTurnBtn = document.getElementById("endTurnBtn");
+
+const modal = document.getElementById("modal");
+const modalTitle = document.getElementById("modalTitle");
+const modalBody = document.getElementById("modalBody");
+const restartBtn = document.getElementById("restartBtn");
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const randi = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 
-let score = 0;
-let coins = 0;
-let shield = 1;
-let timeLeft = 60;
-
-const scoreEl = document.getElementById("score");
-const coinsEl = document.getElementById("coins");
-const shieldEl = document.getElementById("shield");
-const timeEl = document.getElementById("time");
-
-const overlay = document.getElementById("overlay");
-const titleEl = document.getElementById("title");
-const textEl = document.getElementById("text");
-const playBtn = document.getElementById("playBtn");
-const howBtn = document.getElementById("howBtn");
-
-function updateHUD() {
-  scoreEl.textContent = String(score);
-  coinsEl.textContent = String(coins);
-  shieldEl.textContent = String(shield);
-  timeEl.textContent = String(Math.max(0, Math.ceil(timeLeft)));
-}
-
-function showOverlay(title, text) {
-  titleEl.textContent = title;
-  textEl.textContent = text;
-  overlay.classList.remove("hidden");
-}
-function hideOverlay() {
-  overlay.classList.add("hidden");
-}
-
-class MainScene extends Phaser.Scene {
-  constructor() { super("main"); }
-
-  create() {
-    // Reset run
-    score = 0;
-    coins = 0;
-    shield = 1;
-    timeLeft = 60;
-    updateHUD();
-
-    this.gameOver = false;
-
-    // Background
-    this.add.rectangle(W / 2, H / 2, W, H, 0x0b0f1a);
-    this.glow = this.add.circle(W / 2, 90, 520, 0x7b61ff, 0.12);
-
-    // Simple city parallax bars
-    this.city = [];
-    for (let i = 0; i < 16; i++) {
-      const bw = 40;
-      const bh = 80 + (i % 6) * 18;
-      const bx = i * 70;
-      const r = this.add.rectangle(bx, 175, bw, bh, 0xeef2ff, 0.16);
-      this.city.push(r);
-    }
-
-    // Road
-    this.road = this.add.graphics();
-
-    // Player
-    this.laneIndex = 1;
-    this.playerBaseY = H * 0.78;
-    this.player = this.add.rectangle(lanes[this.laneIndex], this.playerBaseY, 44, 70, 0xffffff, 0.95);
-    this.player.setStrokeStyle(4, 0x7b61ff, 0.35);
-
-    this.ring = this.add.circle(this.player.x, this.player.y - 20, 46, 0x23f5a3, 0.0);
-
-    this.vy = 0;
-    this.onGround = true;
-    this.sliding = false;
-
-    // Groups
-    this.obstacles = this.add.group();
-    this.pickups = this.add.group();
-
-    // Spawning and speed
-    this.spawnT = 0;
-    this.roadSpeed = 520;
-    this.t = 0;
-
-    // Controls
-    this.cursors = this.input.keyboard.createCursorKeys();
-    this.keyA = this.input.keyboard.addKey("A");
-    this.keyD = this.input.keyboard.addKey("D");
-    this.keyH = this.input.keyboard.addKey("H");
-
-    // Touch swipe
-    this.swipe = { x: 0, y: 0 };
-    this.input.on("pointerdown", (p) => { this.swipe.x = p.x; this.swipe.y = p.y; });
-    this.input.on("pointerup", (p) => {
-      const dx = p.x - this.swipe.x;
-      const dy = p.y - this.swipe.y;
-
-      if (Math.abs(dx) > Math.abs(dy)) {
-        if (dx > 40) this.changeLane(1);
-        if (dx < -40) this.changeLane(-1);
-      } else {
-        if (dy < -40) this.jump();
-        if (dy > 40) this.slide();
-      }
-    });
-
-    // Go text
-    const go = this.add.text(W / 2, H / 2, "GO!", {
-      fontFamily: "system-ui",
-      fontSize: "64px",
-      fontStyle: "900",
-      color: "#ffffff"
-    }).setOrigin(0.5);
-
-    this.tweens.add({
-      targets: go,
-      alpha: 0,
-      scale: 1.25,
-      duration: 520,
-      ease: "Cubic.easeOut",
-      onComplete: () => go.destroy()
-    });
-  }
-
-  drawRoad() {
-    this.road.clear();
-
-    // Road trapezoid
-    this.road.fillStyle(0xffffff, 0.06);
-    this.road.beginPath();
-    this.road.moveTo(W * 0.42, H * 0.18);
-    this.road.lineTo(W * 0.58, H * 0.18);
-    this.road.lineTo(W * 0.78, H * 0.92);
-    this.road.lineTo(W * 0.22, H * 0.92);
-    this.road.closePath();
-    this.road.fillPath();
-
-    // Lane lines
-    this.road.lineStyle(4, 0xffffff, 0.12);
-    const laneXTop = [W * 0.47, W * 0.50, W * 0.53];
-    const laneXBot = [W * 0.35, W * 0.50, W * 0.65];
-    for (let i = 0; i < 3; i++) {
-      if (i === 0 || i === 2) {
-        this.road.beginPath();
-        this.road.moveTo(laneXTop[i], H * 0.18);
-        this.road.lineTo(laneXBot[i], H * 0.92);
-        this.road.strokePath();
-      }
-    }
-
-    // Motion streaks
-    this.road.fillStyle(0xffffff, 0.06);
-    for (let i = 0; i < 18; i++) {
-      const z = i / 18;
-      const y = Phaser.Math.Linear(H * 0.22, H * 0.92, z);
-      const w = Phaser.Math.Linear(20, 140, z);
-      const x = W / 2 + Math.sin(this.t * 2 + i) * Phaser.Math.Linear(10, 90, z) - w / 2;
-      this.road.fillRect(x, y, w, 3);
-    }
-  }
-
-  flash() {
-    const f = this.add.rectangle(W / 2, H / 2, W, H, 0xffffff, 0.12);
-    this.tweens.add({ targets: f, alpha: 0, duration: 140, onComplete: () => f.destroy() });
-  }
-
-  changeLane(dir) {
-    if (this.gameOver) return;
-    this.laneIndex = clamp(this.laneIndex + dir, 0, 2);
-    this.tweens.add({
-      targets: this.player,
-      x: lanes[this.laneIndex],
-      duration: 120,
-      ease: "Cubic.easeOut"
-    });
-  }
-
-  jump() {
-    if (this.gameOver) return;
-    if (!this.onGround) return;
-    this.vy = -900;
-    this.onGround = false;
-  }
-
-  slide() {
-    if (this.gameOver) return;
-    if (!this.onGround) return;
-    if (this.sliding) return;
-
-    this.sliding = true;
-    this.player.height = 44;
-    this.player.y = this.playerBaseY + 14;
-
-    this.time.delayedCall(320, () => {
-      this.sliding = false;
-      this.player.height = 70;
-      this.player.y = this.playerBaseY;
-    });
-  }
-
-  spawnCoin() {
-    const lane = randi(0, 2);
-    const x = lanes[lane];
-    const y = H * 0.16;
-
-    const c = this.add.circle(x, y, 18, 0xffe678, 0.95);
-    c.setStrokeStyle(4, 0x000000, 0.18);
-    c.kind = "coin";
-    c.lane = lane;
-    this.pickups.add(c);
-  }
-
-  spawnHelp() {
-    const lane = randi(0, 2);
-    const x = lanes[lane];
-    const y = H * 0.16;
-
-    const h = this.add.circle(x, y, 20, 0x23f5a3, 0.95);
-    const t = this.add.text(x, y, "HELP", {
-      fontFamily: "system-ui",
-      fontSize: "12px",
-      fontStyle: "900",
-      color: "#0b0f1a"
-    }).setOrigin(0.5);
-
-    h.kind = "help";
-    h.lane = lane;
-    h.label = t;
-    this.pickups.add(h);
-  }
-
-  spawnObstacle() {
-    const types = ["TRAFFIC", "BUS DELAY", "PAPERWORK", "INSURANCE"];
-    const type = types[randi(0, types.length - 1)];
-    const lane = randi(0, 2);
-
-    const x = lanes[lane];
-    const y = H * 0.18;
-
-    const color =
-      type === "TRAFFIC" ? 0xff3c3c :
-      type === "BUS DELAY" ? 0xffc84a :
-      type === "PAPERWORK" ? 0xa078ff :
-      0x46d2ff;
-
-    const r = this.add.rectangle(x, y, 92, 56, color, 0.95);
-    r.setStrokeStyle(4, 0x000000, 0.22);
-
-    const label = this.add.text(x, y, type, {
-      fontFamily: "system-ui",
-      fontSize: "14px",
-      fontStyle: "900",
-      color: "#0b0f1a"
-    }).setOrigin(0.5);
-
-    r.type = type;
-    r.lane = lane;
-    r.label = label;
-    this.obstacles.add(r);
-  }
-
-  end(win) {
-    this.gameOver = true;
-
-    const title = win ? "YOU MADE IT TO CHEMO" : "YOU MISSED THE APPOINTMENT";
-    const body = win
-      ? "Even with skill, delays still happen.\nSupports make it survivable."
-      : "Not because you played badly.\nBecause delays stacked unfairly.";
-
-    const action =
-      "\n\nWhat could help:\n• flexible clinic hours\n• reliable transportation\n• paid sick leave / caregiver support";
-
-    this.add.rectangle(W / 2, H / 2, 660, 280, 0x000000, 0.58)
-      .setStrokeStyle(2, 0xffffff, 0.18);
-
-    this.add.text(W / 2, H / 2 - 90, title, {
-      fontFamily: "system-ui",
-      fontSize: "26px",
-      fontStyle: "900",
-      color: "#ffffff"
-    }).setOrigin(0.5);
-
-    this.add.text(W / 2, H / 2 - 35, body + action, {
-      fontFamily: "system-ui",
-      fontSize: "16px",
-      color: "#e6eaff",
-      align: "center"
-    }).setOrigin(0.5);
-
-    const btn = this.add.text(W / 2, H / 2 + 95, "PLAY AGAIN", {
-      fontFamily: "system-ui",
-      fontSize: "18px",
-      fontStyle: "900",
-      color: "#0b0f1a",
-      backgroundColor: "#eef2ff",
-      padding: { x: 14, y: 10 }
-    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
-
-    btn.on("pointerdown", () => this.scene.restart());
-  }
-
-  update(_, delta) {
-    if (this.gameOver) return;
-
-    const dt = delta / 1000;
-    this.t += dt;
-
-    // Road draw
-    this.drawRoad();
-
-    // City parallax
-    for (const b of this.city) {
-      b.x -= 30 * dt;
-      if (b.x < -60) b.x = W + 60;
-    }
-
-    // Controls
-    const leftPressed = this.cursors.left.isDown || this.keyA.isDown;
-    const rightPressed = this.cursors.right.isDown || this.keyD.isDown;
-
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.left) || Phaser.Input.Keyboard.JustDown(this.keyA)) this.changeLane(-1);
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.right) || Phaser.Input.Keyboard.JustDown(this.keyD)) this.changeLane(1);
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.space)) this.jump();
-    if (Phaser.Input.Keyboard.JustDown(this.cursors.down)) this.slide();
-
-    if (Phaser.Input.Keyboard.JustDown(this.keyH) && shield > 0) {
-      shield -= 1;
-      this.flash();
-      updateHUD();
-    }
-
-    // Gravity
-    if (!this.onGround) {
-      this.vy += 2400 * dt;
-      this.player.y += this.vy * dt;
-      if (this.player.y >= this.playerBaseY) {
-        this.player.y = this.playerBaseY;
-        this.vy = 0;
-        this.onGround = true;
-      }
-    }
-
-    // Shield ring
-    this.ring.x = this.player.x;
-    this.ring.y = this.player.y - 20;
-    this.ring.setAlpha(shield > 0 ? 0.10 : 0.0);
-
-    // Spawn cadence
-    this.spawnT -= dt;
-    if (this.spawnT <= 0) {
-      const elapsed = 60 - timeLeft;
-      const gap = clamp(0.65 - elapsed * 0.006, 0.32, 0.65);
-      this.spawnT = gap;
-
-      const roll = Math.random();
-      if (roll < 0.38) {
-        this.spawnCoin();
-        if (Math.random() < 0.25) this.spawnCoin();
-      } else if (roll < 0.46) {
-        this.spawnHelp();
-      } else {
-        this.spawnObstacle();
-      }
-    }
-
-    // Move objects down the road
-    const moveY = (this.roadSpeed + (60 - timeLeft) * 2.8) * dt;
-
-    this.obstacles.getChildren().forEach(o => {
-      o.y += moveY;
-      o.label.x = o.x;
-      o.label.y = o.y;
-
-      // Collision near player
-      if (Math.abs(o.y - this.player.y) < 40 && o.lane === this.laneIndex) {
-        const needSlide = o.type === "PAPERWORK";
-        const needJump = (o.type === "TRAFFIC" || o.type === "INSURANCE");
-        const ok =
-          (needSlide && this.sliding) ||
-          (needJump && !this.onGround) ||
-          (!needSlide && !needJump && o.type !== "BUS DELAY"); // bus delay is always bad if same lane
-
-        if (!ok) {
-          if (shield > 0) {
-            shield -= 1;
-            this.flash();
-          } else {
-            timeLeft -= 6;
-            this.flash();
-          }
-          score = Math.max(0, score - 10);
-        } else {
-          score += 12;
-        }
-
-        updateHUD();
-        o.label.destroy();
-        o.destroy();
-      }
-
-      if (o.y > H + 80) {
-        o.label.destroy();
-        o.destroy();
-      }
-    });
-
-    this.pickups.getChildren().forEach(p => {
-      p.y += moveY;
-      if (p.label) { p.label.x = p.x; p.label.y = p.y; }
-
-      const near = Math.abs(p.y - this.player.y) < 40 && Math.abs(p.x - this.player.x) < 70;
-      if (near) {
-        if (p.kind === "coin") { coins += 1; score += 8; this.flash(); }
-        if (p.kind === "help") { shield += 1; score += 15; this.flash(); }
-        updateHUD();
-        if (p.label) p.label.destroy();
-        p.destroy();
-      }
-
-      if (p.y > H + 80) {
-        if (p.label) p.label.destroy();
-        p.destroy();
-      }
-    });
-
-    // Timer and win/lose
-    timeLeft -= dt;
-    updateHUD();
-
-    if (timeLeft <= 0) {
-      this.end(false);
-      return;
-    }
-
-    // Simple win: survive and get decent score
-    if (timeLeft <= 0.1 && score >= 220) {
-      this.end(true);
-    }
-  }
-}
-
-const config = {
-  type: Phaser.AUTO,
-  parent: "game",
-  width: W,
-  height: H,
-  backgroundColor: "#0b0f1a",
-  scene: [MainScene]
+const TOKEN_COLORS = ["#7b61ff", "#23f5a3", "#ffd24a", "#46d2ff"];
+
+const SPACE_TYPES = {
+  START: "start",
+  DELAY: "delay",
+  SUPPORT: "support",
+  CHECKPOINT: "checkpoint",
+  END: "end"
 };
+
+// Board spaces: 32 spaces, arranged in an 8-column grid visually.
+const SPACES = [
+  { type: SPACE_TYPES.START, label: "Diagnosis: You need treatment" },
+  { type: SPACE_TYPES.DELAY, label: "Insurance review" },
+  { type: SPACE_TYPES.CHECKPOINT, label: "Primary care referral" },
+  { type: SPACE_TYPES.DELAY, label: "Paperwork missing" },
+  { type: SPACE_TYPES.SUPPORT, label: "Patient navigator offered" },
+  { type: SPACE_TYPES.DELAY, label: "Scan rescheduled" },
+  { type: SPACE_TYPES.DELAY, label: "Transportation delay" },
+  { type: SPACE_TYPES.CHECKPOINT, label: "Imaging completed" },
+
+  { type: SPACE_TYPES.DELAY, label: "Prior authorization" },
+  { type: SPACE_TYPES.SUPPORT, label: "Reliable ride available" },
+  { type: SPACE_TYPES.DELAY, label: "Pharmacy out of stock" },
+  { type: SPACE_TYPES.DELAY, label: "Work schedule conflict" },
+  { type: SPACE_TYPES.CHECKPOINT, label: "Lab work done" },
+  { type: SPACE_TYPES.DELAY, label: "Insurance call-back" },
+  { type: SPACE_TYPES.DELAY, label: "Childcare issue" },
+  { type: SPACE_TYPES.CHECKPOINT, label: "Treatment plan finalized" },
+
+  { type: SPACE_TYPES.DELAY, label: "Specialist visit delayed" },
+  { type: SPACE_TYPES.SUPPORT, label: "Paid sick leave" },
+  { type: SPACE_TYPES.DELAY, label: "Copay surprise" },
+  { type: SPACE_TYPES.DELAY, label: "Clinic understaffed" },
+  { type: SPACE_TYPES.CHECKPOINT, label: "Port placement scheduled" },
+  { type: SPACE_TYPES.DELAY, label: "Paperwork error again" },
+  { type: SPACE_TYPES.SUPPORT, label: "Community support fund" },
+  { type: SPACE_TYPES.DELAY, label: "Ride canceled last minute" },
+
+  { type: SPACE_TYPES.DELAY, label: "Appointment moved earlier" },
+  { type: SPACE_TYPES.CHECKPOINT, label: "Pre-chemo checklist" },
+  { type: SPACE_TYPES.DELAY, label: "Insurance denial (appeal)" },
+  { type: SPACE_TYPES.SUPPORT, label: "Navigator escalates case" },
+  { type: SPACE_TYPES.DELAY, label: "Long hold time" },
+  { type: SPACE_TYPES.CHECKPOINT, label: "Clearance received" },
+  { type: SPACE_TYPES.DELAY, label: "Traffic" },
+  { type: SPACE_TYPES.END, label: "Treatment: You made it" }
+];
+
+const delayCards = [
+  { text: "Insurance needs more documentation. Move back 3 spaces.", effect: (g, p) => movePlayer(g, p, -3) },
+  { text: "Scan rescheduled. Skip your next turn.", effect: (g, p) => (p.skipTurns += 1) },
+  { text: "Transportation canceled. Move back 2 spaces.", effect: (g, p) => movePlayer(g, p, -2) },
+  { text: "Pharmacy delay. Move back 1 space.", effect: (g, p) => movePlayer(g, p, -1) },
+  { text: "Work shift conflict. Lose 1 turn.", effect: (g, p) => (p.skipTurns += 1) },
+  { text: "Paperwork error. Return to the last checkpoint.", effect: (g, p) => moveToLastCheckpoint(p) },
+  { text: "Clinic understaffed. Everyone skips a turn.", effect: (g, p) => g.players.forEach(x => x.skipTurns += 1) }
+];
+
+const supportCards = [
+  { text: "Patient Navigator: Block the next delay card that hits you.", effect: (g, p) => (p.blockDelay += 1) },
+  { text: "Reliable Transportation: Move forward 2 spaces.", effect: (g, p) => movePlayer(g, p, +2) },
+  { text: "Paid Sick Leave: Take one extra roll right now.", effect: (g, p) => (g.extraRoll = true) },
+  { text: "Community Support: Ignore one skip-turn penalty.", effect: (g, p) => (p.skipTurns = Math.max(0, p.skipTurns - 1)) }
+];
 
 let game = null;
 
-playBtn.addEventListener("click", () => {
-  hideOverlay();
-  if (!game) game = new Phaser.Game(config);
-  else game.scene.keys.main.scene.restart();
+function makeNameInputs(count) {
+  nameFieldsEl.innerHTML = "";
+  for (let i = 0; i < count; i++) {
+    const input = document.createElement("input");
+    input.placeholder = `Player ${i + 1} name`;
+    input.value = `Player ${i + 1}`;
+    input.dataset.idx = String(i);
+    nameFieldsEl.appendChild(input);
+  }
+}
+
+playerCountEl.addEventListener("change", () => {
+  makeNameInputs(Number(playerCountEl.value));
 });
 
-howBtn.addEventListener("click", () => {
-  showOverlay(
-    "How to play",
-    "Goal: make it to chemo by surviving the timer.\n\n" +
-    "A/Left and D/Right change lanes.\nSpace jumps.\nDown slides.\n\n" +
-    "TRAFFIC + INSURANCE: jump.\nPAPERWORK: slide.\nBUS DELAY: avoid that lane.\n\n" +
-    "Coins give score.\nHELP gives shield.\nH uses shield."
-  );
+makeNameInputs(Number(playerCountEl.value));
+
+function newGame(names) {
+  return {
+    round: 1,
+    turnIndex: 0,
+    started: true,
+    lastRoll: null,
+    extraRoll: false,
+    players: names.map((name, i) => ({
+      name,
+      color: TOKEN_COLORS[i],
+      pos: 0,
+      skipTurns: 0,
+      blockDelay: 0
+    }))
+  };
+}
+
+function currentPlayer(g) {
+  return g.players[g.turnIndex];
+}
+
+function movePlayer(g, p, delta) {
+  p.pos = clamp(p.pos + delta, 0, SPACES.length - 1);
+}
+
+function moveToLastCheckpoint(p) {
+  let last = 0;
+  for (let i = 0; i <= p.pos; i++) {
+    if (SPACES[i].type === SPACE_TYPES.CHECKPOINT || SPACES[i].type === SPACE_TYPES.START) last = i;
+  }
+  p.pos = last;
+}
+
+function renderBoard(g) {
+  boardEl.innerHTML = "";
+
+  for (let i = 0; i < SPACES.length; i++) {
+    const s = SPACES[i];
+    const cell = document.createElement("div");
+    cell.className = `space ${s.type}`;
+
+    const num = document.createElement("div");
+    num.className = "num";
+    num.textContent = `#${i}`;
+
+    const label = document.createElement("div");
+    label.className = "label";
+    label.textContent = s.label;
+
+    const tokens = document.createElement("div");
+    tokens.className = "tokens";
+
+    if (g) {
+      g.players.forEach((p) => {
+        if (p.pos === i) {
+          const t = document.createElement("div");
+          t.className = "token";
+          t.style.background = p.color;
+          t.title = p.name;
+          tokens.appendChild(t);
+        }
+      });
+    }
+
+    cell.appendChild(num);
+    cell.appendChild(label);
+    cell.appendChild(tokens);
+
+    boardEl.appendChild(cell);
+  }
+}
+
+function renderPlayers(g) {
+  playersListEl.innerHTML = "";
+  g.players.forEach((p, idx) => {
+    const row = document.createElement("div");
+    row.className = "playerRow";
+
+    const left = document.createElement("div");
+    left.innerHTML = `<b style="color:${p.color}">●</b> <b>${p.name}</b><br><span style="opacity:.85;font-size:12px">Position: #${p.pos}</span>`;
+
+    const right = document.createElement("div");
+    right.className = "badges";
+
+    const b1 = document.createElement("span");
+    b1.className = "badge";
+    b1.textContent = `Skip: ${p.skipTurns}`;
+    right.appendChild(b1);
+
+    const b2 = document.createElement("span");
+    b2.className = "badge good";
+    b2.textContent = `Block Delay: ${p.blockDelay}`;
+    right.appendChild(b2);
+
+    row.appendChild(left);
+    row.appendChild(right);
+    playersListEl.appendChild(row);
+  });
+}
+
+function setUIForTurn(g) {
+  const p = currentPlayer(g);
+  turnNameEl.textContent = p.name;
+  roundNumEl.textContent = String(g.round);
+  lastRollEl.textContent = g.lastRoll === null ? "-" : String(g.lastRoll);
+
+  const s = SPACES[p.pos];
+  landedTextEl.textContent = `${s.label} (${s.type.toUpperCase()})`;
+
+  endTurnBtn.disabled = true;
+  rollBtn.disabled = false;
+
+  statusLineEl.textContent = `${p.name}'s turn. Roll the die.`;
+  noteTextEl.textContent = "Delays are common. Supports are rare. That is the point.";
+}
+
+function drawCard(g, type) {
+  if (type === SPACE_TYPES.DELAY) return delayCards[randi(0, delayCards.length - 1)];
+  if (type === SPACE_TYPES.SUPPORT) return supportCards[randi(0, supportCards.length - 1)];
+  return null;
+}
+
+function applyLanding(g, p) {
+  const s = SPACES[p.pos];
+
+  if (s.type === SPACE_TYPES.START || s.type === SPACE_TYPES.CHECKPOINT) {
+    cardTextEl.textContent = "Checkpoint: breathe for a moment. No card drawn.";
+    endTurnBtn.disabled = false;
+    return;
+  }
+
+  if (s.type === SPACE_TYPES.END) {
+    winGame(p);
+    return;
+  }
+
+  if (s.type === SPACE_TYPES.DELAY) {
+    if (p.blockDelay > 0) {
+      p.blockDelay -= 1;
+      cardTextEl.textContent = "A delay hit you, but your support blocked it (Block Delay used).";
+      endTurnBtn.disabled = false;
+      return;
+    }
+
+    const card = drawCard(g, SPACE_TYPES.DELAY);
+    cardTextEl.textContent = card.text;
+    card.effect(g, p);
+
+    // After effects, check for win
+    if (SPACES[p.pos].type === SPACE_TYPES.END) {
+      winGame(p);
+      return;
+    }
+
+    endTurnBtn.disabled = false;
+    return;
+  }
+
+  if (s.type === SPACE_TYPES.SUPPORT) {
+    const card = drawCard(g, SPACE_TYPES.SUPPORT);
+    cardTextEl.textContent = card.text;
+    card.effect(g, p);
+
+    endTurnBtn.disabled = false;
+    return;
+  }
+}
+
+function nextTurn(g) {
+  g.extraRoll = false;
+  g.lastRoll = null;
+  lastRollEl.textContent = "-";
+
+  // Advance turn
+  g.turnIndex = (g.turnIndex + 1) % g.players.length;
+  if (g.turnIndex === 0) g.round += 1;
+
+  // If next player must skip, process skip immediately (but show it clearly)
+  let guard = 0;
+  while (guard < 10) {
+    const p = currentPlayer(g);
+    if (p.skipTurns > 0) {
+      p.skipTurns -= 1;
+      statusLineEl.textContent = `${p.name} loses a turn due to a delay.`;
+      // Move to next player
+      g.turnIndex = (g.turnIndex + 1) % g.players.length;
+      if (g.turnIndex === 0) g.round += 1;
+      guard += 1;
+      continue;
+    }
+    break;
+  }
+
+  setUIForTurn(g);
+  renderBoard(g);
+  renderPlayers(g);
+}
+
+function rollDie() {
+  if (!game) return;
+  const p = currentPlayer(game);
+
+  const roll = randi(1, 6);
+  game.lastRoll = roll;
+  lastRollEl.textContent = String(roll);
+
+  // Move
+  movePlayer(game, p, roll);
+
+  // Update UI
+  const s = SPACES[p.pos];
+  landedTextEl.textContent = `${s.label} (${s.type.toUpperCase()})`;
+  statusLineEl.textContent = `${p.name} rolled a ${roll}.`;
+
+  // Apply landing
+  applyLanding(game, p);
+
+  // If support gave extra roll
+  if (game.extraRoll) {
+    noteTextEl.textContent = "You earned an extra roll. Roll again before ending your turn.";
+    endTurnBtn.disabled = true;
+    rollBtn.disabled = false;
+  } else {
+    rollBtn.disabled = true;
+  }
+
+  renderBoard(game);
+  renderPlayers(game);
+}
+
+function winGame(player) {
+  modalTitle.textContent = `${player.name} reached Treatment`;
+  modalBody.textContent =
+`You made it to treatment.
+
+Notice what decided the outcome:
+- delays (insurance, paperwork, transport) were frequent
+- supports were rare but powerful
+
+Takeaway:
+Reaching cancer treatment should not depend on luck.`;
+
+  modal.classList.remove("hidden");
+}
+
+function resetAll() {
+  modal.classList.add("hidden");
+  setupCard.classList.remove("hidden");
+  actionCard.classList.add("hidden");
+  playersCard.classList.add("hidden");
+  statusLineEl.textContent = "Press Start Game.";
+  game = null;
+  renderBoard(null);
+}
+
+startBtn.addEventListener("click", () => {
+  const count = Number(playerCountEl.value);
+  const inputs = [...nameFieldsEl.querySelectorAll("input")].slice(0, count);
+  const names = inputs.map((inp, i) => (inp.value || `Player ${i + 1}`).trim());
+
+  game = newGame(names);
+
+  setupCard.classList.add("hidden");
+  actionCard.classList.remove("hidden");
+  playersCard.classList.remove("hidden");
+
+  modal.classList.add("hidden");
+
+  renderBoard(game);
+  renderPlayers(game);
+  setUIForTurn(game);
+
+  cardTextEl.textContent = "Roll the die to begin.";
 });
 
-// Start screen
-showOverlay(
-  "Chemo Dash",
-  "You are trying to reach a chemo appointment on time.\n" +
-  "Delays represent real barriers to cancer care.\n\nPress Play."
-);
+rollBtn.addEventListener("click", rollDie);
+
+endTurnBtn.addEventListener("click", () => {
+  if (!game) return;
+  nextTurn(game);
+});
+
+restartBtn.addEventListener("click", () => {
+  resetAll();
+});
+
+// Initial render
+renderBoard(null);
+resetAll();
