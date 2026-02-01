@@ -1,0 +1,91 @@
+:root { color-scheme: light; }
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #f6f7fb;
+  color: #111;
+}
+
+.wrap { max-width: 1100px; margin: 0 auto; padding: 18px; }
+
+.top {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+h1 { margin: 0; font-size: 28px; }
+.sub { margin: 6px 0 0; opacity: 0.75; }
+
+.hud { display: flex; gap: 10px; flex-wrap: wrap; }
+.pill {
+  background: white;
+  border: 1px solid #e6e7ee;
+  padding: 8px 10px;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+  font-weight: 600;
+}
+
+.main { margin-top: 14px; }
+.canvasCard {
+  background: white;
+  border: 1px solid #e6e7ee;
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+}
+
+canvas { width: 100%; height: auto; display: block; border-radius: 12px; }
+
+.controls { margin-top: 12px; }
+.keyRow { display: flex; gap: 10px; flex-wrap: wrap; }
+.key {
+  background: white;
+  border: 1px solid #e6e7ee;
+  padding: 8px 10px;
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+.note { margin: 10px 0 0; opacity: 0.8; }
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(10, 10, 20, 0.55);
+  padding: 18px;
+}
+
+.panel {
+  width: min(560px, 100%);
+  background: white;
+  border-radius: 18px;
+  border: 1px solid #e6e7ee;
+  padding: 18px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+
+.overlayText { opacity: 0.9; line-height: 1.35; }
+
+.btnRow { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+button {
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  background: #111;
+  color: white;
+}
+button.secondary { background: #e9ebf5; color: #111; }
+button:active { transform: translateY(1px); }
+
+.small { margin-top: 12px; font-size: 12px; opacity: 0.7; }
+
+.hidden { display: none; }
