@@ -12,15 +12,14 @@
       <h1>Two Patients, One Diagnosis</h1>
       <p>
         Same diagnosis. Same care steps. Different support.
-        Click <b>Next Step</b> to advance both together and watch delays stack.
+        Click <b>Next Step</b> to advance both together and see how non-medical delays stack.
       </p>
     </div>
 
     <div class="topActions">
       <button id="nextBtn" class="primary">Next Step (N)</button>
-      <button id="pauseBtn" class="ghost">Pause</button>
-      <button id="tutorialBtn" class="ghost">Tutorial</button>
       <button id="resetBtn" class="ghost">Reset (R)</button>
+      <button id="tutorialBtn" class="ghost">Tutorial</button>
     </div>
   </header>
 
@@ -29,29 +28,12 @@
       <div class="simTop">
         <div class="pillRow">
           <span class="pill">Seed: <span id="seedText">-</span></span>
-          <span class="pill">Auto-resolve: <span id="autoText">ON</span></span>
-          <span class="pill">Countdown: <span id="countdownText">-</span>s</span>
           <span class="pill">Equity Gap: <span id="gapText">0</span> days</span>
-        </div>
-
-        <div class="toggleRow">
-          <label class="switch">
-            <input type="checkbox" id="autoToggle" checked />
-            <span>Auto-resolve events (5s)</span>
-          </label>
-          <label class="switch">
-            <input type="checkbox" id="reduceMotion" />
-            <span>Reduced motion</span>
-          </label>
-          <label class="switch">
-            <input type="checkbox" id="soundToggle" checked />
-            <span>Sound</span>
-          </label>
         </div>
       </div>
 
       <div class="twoCol">
-        <section class="patientCard" id="cardA">
+        <section class="patientCard" id="cardA" aria-label="Patient A">
           <div class="cardHeader">
             <div class="who">
               <div class="avatar a">A</div>
@@ -76,7 +58,7 @@
           <div class="inventory">
             <div class="sectionTitle">Support Stickers</div>
             <div class="chips" id="invA"></div>
-            <div class="smallHint">Spend 1 sticker to cancel a delay (Intervene 1)</div>
+            <div class="smallHint">Stickers appear sometimes and represent support resources.</div>
           </div>
 
           <div class="supports">
@@ -94,7 +76,7 @@
           </div>
         </section>
 
-        <section class="patientCard" id="cardB">
+        <section class="patientCard" id="cardB" aria-label="Patient B">
           <div class="cardHeader">
             <div class="who">
               <div class="avatar b">B</div>
@@ -119,7 +101,7 @@
           <div class="inventory">
             <div class="sectionTitle">Support Stickers</div>
             <div class="chips" id="invB"></div>
-            <div class="smallHint">Spend 1 sticker to cancel a delay (Intervene 2)</div>
+            <div class="smallHint">Try toggling supports to see the gap change.</div>
           </div>
 
           <div class="supports">
@@ -145,17 +127,9 @@
         <div class="bigStep" id="currentStep">Press Next Step</div>
 
         <div class="eventBox">
-          <div class="eventTitle">Revealed Event</div>
+          <div class="eventTitle">Latest Events</div>
           <div class="eventLine" id="eventLine">No event yet.</div>
           <div class="eventMeta" id="eventMeta"></div>
-
-          <div class="btnRow">
-            <button id="interveneA" class="ghost">Intervene A (1)</button>
-            <button id="interveneB" class="ghost">Intervene B (2)</button>
-          </div>
-          <div class="tiny">
-            Intervene spends 1 Support Sticker to cancel this event for that patient.
-          </div>
         </div>
 
         <div class="panelTitle">Policy Levers (global)</div>
@@ -170,29 +144,37 @@
         <div class="panelTitle">Analytics</div>
         <div class="chartBox">
           <canvas id="chart" width="360" height="220"></canvas>
-          <div class="tiny">Shows category days for A vs B (Insurance, Paperwork, Transport, Work, Childcare, Clinic).</div>
+          <div class="tiny">Category delay days for A vs B.</div>
         </div>
 
-        <div class="panelTitle">Tools</div>
-        <div class="toolRow">
-          <button id="saveBtn" class="ghost">Save</button>
-          <button id="loadBtn" class="ghost">Load</button>
-          <button id="shareBtn" class="ghost">Copy Share Link</button>
-        </div>
-        <div class="toolRow">
-          <button id="exportBtn" class="ghost">Export Summary</button>
-          <button id="clearBtn" class="ghost">Clear Save</button>
-        </div>
-
-        <div class="notice" id="notice">Tip: Press N to advance, 1/2 to intervene.</div>
+        <div class="notice" id="notice">Tip: Press N to advance, R to reset.</div>
       </section>
     </aside>
   </main>
 
+  <!-- END SUMMARY MODAL (Summary stays top, Slides embed bottom half) -->
   <div class="modal hidden" id="modal" role="dialog" aria-modal="true">
     <div class="modalCard">
       <h2 id="modalTitle">Outcome</h2>
-      <p id="modalBody"></p>
+
+      <div class="modalSplit">
+        <div class="modalSummary">
+          <p id="modalBody"></p>
+        </div>
+
+        <div class="modalSlides">
+          <iframe
+            id="slidesEmbed"
+            src="https://docs.google.com/presentation/d/e/2PACX-1vSQMIaCluvdoMU9ymcxaHMCjWbcre7FYHD_TzcWjJAFfAtqzIjMjKIAaQpWNT85Ds-s2fQ5kgPho_VA/pubembed?start=false&loop=true&delayms=5000"
+            frameborder="0"
+            allowfullscreen="true"
+            mozallowfullscreen="true"
+            webkitallowfullscreen="true"
+            title="Embedded Google Slides"
+          ></iframe>
+        </div>
+      </div>
+
       <div class="modalBtns">
         <button id="closeModal" class="primary">Close</button>
         <button id="playAgain" class="ghost">Play Again</button>
