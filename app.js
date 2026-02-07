@@ -38,6 +38,15 @@ const ui = {
   modalBody: $("modalBody"),
   closeModal: $("closeModal"),
   playAgain: $("playAgain"),
+
+  // ADDED buttons (they exist in your HTML now)
+  interveneA: $("interveneA"),
+  interveneB: $("interveneB"),
+
+  saveBtn: $("saveBtn"),
+  loadBtn: $("loadBtn"),
+  exportBtn: $("exportBtn"),
+  shareBtn: $("shareBtn"),
 };
 
 function clamp(v, a, b){ return Math.max(a, Math.min(b, v)); }
@@ -170,7 +179,7 @@ function stepForward(){
   maybeAwardSticker(state.B);
 
   render();
-  resolvePending(); // <- immediate, no waiting
+  resolvePending(); // immediate, no waiting
 }
 
 function resolvePending(){
@@ -358,6 +367,135 @@ function reset(){
   ui.notice.textContent = "Tip: Press N to advance, R to reset.";
 }
 
+/* ---------------- ADDED: Interventions + Save/Export ---------------- */
+
+function downloadText(filename, text){
+  const blob = new Blob([text], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function safeCloneState(){
+  // strip rng function by saving only seed and core values
+  return {
+    seed: state.seed,
+    stepIndex: state.stepIndex,
+    done: state.done,
+    pending: { A: null, B: null, stepName: null }, // never reload mid-pending
+    A: state.A,
+    B: state.B,
+
+    uiSupports: {
+      navA: ui.navA.checked, rideA: ui.rideA.checked, leaveA: ui.leaveA.checked,
+      navB: ui.navB.checked, rideB: ui.rideB.checked, leaveB: ui.leaveB.checked,
+    },
+    uiPolicies: {
+      polNavigator: ui.polNavigator.checked,
+      polTransit: ui.polTransit.checked,
+      polAdmin: ui.polAdmin.checked,
+      polLeave: ui.polLeave.checked,
+      polCapacity: ui.polCapacity.checked,
+    }
+  };
+}
+
+function applyLoadedState(loaded){
+  if (!loaded || !loaded.A || !loaded.B) return false;
+
+  state = newState(Number(loaded.seed ?? defaultSeed()));
+  state.stepIndex = Number(loaded.stepIndex ?? -1);
+  state.done = !!loaded.done;
+
+  state.A = loaded.A;
+  state.B = loaded.B;
+
+  // restore toggles if present
+  if (loaded.uiSupports){
+    ui.navA.checked = !!loaded.uiSupports.navA;
+    ui.rideA.checked = !!loaded.uiSupports.rideA;
+    ui.leaveA.checked = !!loaded.uiSupports.leaveA;
+
+    ui.navB.checked = !!loaded.uiSupports.navB;
+    ui.rideB.checked = !!loaded.uiSupports.rideB;
+    ui.leaveB.checked = !!loaded.uiSupports.leaveB;
+  }
+
+  if (loaded.uiPolicies){
+    ui.polNavigator.checked = !!loaded.uiPolicies.polNavigator;
+    ui.polTransit.checked = !!loaded.uiPolicies.polTransit;
+    ui.polAdmin.checked = !!loaded.uiPolicies.polAdmin;
+    ui.polLeave.checked = !!loaded.uiPolicies.polLeave;
+    ui.polCapacity.checked = !!loaded.uiPolicies.polCapacity;
+  }
+
+  // refresh headline text
+  ui.eventLine.textContent = "Loaded run.";
+  ui.eventMeta.textContent = "";
+
+  render();
+
+  if (state.done){
+    endRun();
+  }
+
+  return true;
+}
+
+function makeShareLink(){
+  const payload = btoa(unescape(encodeURIComponent(JSON.stringify(safeCloneState()))));
+  const url = new URL(window.location.href);
+  url.searchParams.set("run", payload);
+  return url.toString();
+}
+
+function tryLoadFromUrl(){
+  const url = new URL(window.location.href);
+  const run = url.searchParams.get("run");
+  if (!run) return;
+
+  try{
+    const json = decodeURIComponent(escape(atob(run)));
+    const loaded = JSON.parse(json);
+    const ok = applyLoadedState(loaded);
+    if (ok){
+      ui.notice.textContent = "Loaded from share link.";
+    }
+  }catch(e){
+    // ignore invalid share link
+  }
+}
+
+function intervene(label){
+  if (!state || state.done) return;
+
+  const p = label === "A" ? state.A : state.B;
+
+  // Demo-friendly intervention: remove some accumulated delay and stress
+  const beforeDays = p.days;
+  const beforeStress = p.stress;
+
+  const removeDays = 3;
+  const removeStress = 1;
+
+  p.days = Math.max(0, p.days - removeDays);
+  p.stress = Math.max(0, p.stress - removeStress);
+
+  logEvent(
+    p,
+    `🩺 Intervention applied (−${beforeDays - p.days} days)`,
+    "Real-world supports can reduce delays right away (navigation, transport, approvals)."
+  );
+
+  ui.notice.textContent = `Intervention used for Patient ${label}.`;
+  render();
+}
+
 function wire(){
   ui.nextBtn.addEventListener("click", stepForward);
   ui.resetBtn.addEventListener("click", reset);
@@ -379,6 +517,51 @@ function wire(){
   ui.closeModal.addEventListener("click", () => ui.modal.classList.add("hidden"));
   ui.playAgain.addEventListener("click", () => { ui.modal.classList.add("hidden"); reset(); });
 
+  // ADDED: Intervene buttons
+  if (ui.interveneA) ui.interveneA.addEventListener("click", () => intervene("A"));
+  if (ui.interveneB) ui.interveneB.addEventListener("click", () => intervene("B"));
+
+  // ADDED: Save/Load/Export/Share
+  if (ui.saveBtn) ui.saveBtn.addEventListener("click", () => {
+    try{
+      localStorage.setItem("tpod_run", JSON.stringify(safeCloneState()));
+      ui.notice.textContent = "Saved.";
+    }catch(e){
+      ui.notice.textContent = "Save failed (storage blocked).";
+    }
+  });
+
+  if (ui.loadBtn) ui.loadBtn.addEventListener("click", () => {
+    const raw = localStorage.getItem("tpod_run");
+    if (!raw){
+      ui.notice.textContent = "No saved run found.";
+      return;
+    }
+    try{
+      const loaded = JSON.parse(raw);
+      const ok = applyLoadedState(loaded);
+      ui.notice.textContent = ok ? "Loaded." : "Saved run invalid.";
+    }catch(e){
+      ui.notice.textContent = "Could not load saved run.";
+    }
+  });
+
+  if (ui.exportBtn) ui.exportBtn.addEventListener("click", () => {
+    const out = JSON.stringify(safeCloneState(), null, 2);
+    downloadText("two-patients-run.json", out);
+    ui.notice.textContent = "Exported JSON.";
+  });
+
+  if (ui.shareBtn) ui.shareBtn.addEventListener("click", async () => {
+    const link = makeShareLink();
+    try{
+      await navigator.clipboard.writeText(link);
+      ui.notice.textContent = "Share link copied.";
+    }catch(e){
+      prompt("Copy this link:", link);
+    }
+  });
+
   document.addEventListener("keydown", (e) => {
     const k = e.key.toLowerCase();
     if (k === "n") stepForward();
@@ -389,3 +572,4 @@ function wire(){
 ui.modal.classList.add("hidden");
 wire();
 reset();
+tryLoadFromUrl();
