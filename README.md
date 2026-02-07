@@ -6,7 +6,7 @@ This project is designed to be **fast to understand, emotionally clear, and easy
 
 ---
 
-## 💡 What This Is
+## What This Is
 
 Two patients receive the **same cancer diagnosis**.
 
@@ -23,7 +23,7 @@ The simulation makes one point clear:
 
 ---
 
-## 🧠 Why This Matters
+## Why This Matters
 
 Many delays in cancer care are **not medical**.
 They come from:
@@ -37,7 +37,7 @@ This project visualizes how those delays compound — and how support systems re
 
 ---
 
-## 🎮 How It Works
+##  How It Works
 
 - Click **Next Step** to advance both patients at the same time
 - Each step may trigger a delay event
@@ -49,7 +49,7 @@ There is **no waiting or countdown**. Everything resolves instantly to keep demo
 
 ---
 
-## 🧩 Features
+## Features
 
 - Side-by-side patient comparison
 - Real-world delay categories (insurance, admin, transport, work, clinic)
@@ -61,7 +61,7 @@ There is **no waiting or countdown**. Everything resolves instantly to keep demo
 
 ---
 
-## ⌨️ Controls
+##  Controls
 
 - **Next Step** button — advance simulation
 - **Reset** — start over
@@ -70,7 +70,7 @@ There is **no waiting or countdown**. Everything resolves instantly to keep demo
 
 ---
 
-## 🧪 Disclaimer
+##  Disclaimer
 
 This is a **simulation**, not a medical model.
 
@@ -83,7 +83,7 @@ It does **not** predict individual outcomes.
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 - HTML
 - CSS
@@ -94,7 +94,7 @@ It does **not** predict individual outcomes.
 
 ---
 
-## 🚀 How to Run Locally
+## How to Run Locally
 
 1. Download or clone this repository
 2. Open `index.html` in a browser
@@ -104,7 +104,7 @@ No installation required.
 
 ---
 
-## 🏆 Project Goal
+## Project Goal
 
 To create a tool that:
 - Is immediately understandable
@@ -114,7 +114,7 @@ To create a tool that:
 
 ---
 
-## 📌 Built For
+## Built For
 
 - Hackathons
 - Health equity challenges
