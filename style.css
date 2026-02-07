@@ -356,3 +356,19 @@ button:disabled{ opacity:0.45; cursor:not-allowed; }
   margin-top: 4px;
 }
 
+/* ---- Added button rows (Intervene + Save/Export) ---- */
+.interveneRow,
+.toolRow{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+@media (max-width: 1100px){
+  .interveneRow,
+  .toolRow{
+    grid-template-columns: 1fr;
+  }
+}
+
